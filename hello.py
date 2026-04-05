@@ -1,10 +1,13 @@
-# 这是你实习备战的第一个程序
-name = "mickeycpu"
-school = ""
-major = "软件技术"
-goal = "3个月后拿到Python实习offer"
+#  题目一
+# s = [i for i  in range(1,21) if i % 2 != 0]
+# print(s)
 
-print(f"我叫{name}")
-print(f"来自{school}{major}")
-print(f"我的目标是：{goal}")
-print("今天是备战第1天，加油！")
+#  题目二
+# words = ["hello", "world", "python", "flask"]
+# words2 = [s.upper() for s in words ]
+# print(words2)
+
+#  题目三
+scores = [72, 88, 95, 43, 81, 67, 90]
+scores2 = [s + 5 for s in scores  if s >= 80]
+print(scores2)
