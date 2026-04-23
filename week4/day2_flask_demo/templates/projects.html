@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>项目列表</title></head>
+<body>
+    <h1>{{ student }} 的项目</h1>
+    <ol>
+        {% for p in projects %}
+        <li>{{ p }}</li>
+        {% endfor %}
+    </ol>
+    <p>共 {{ projects | length }} 个项目</p>
+</body>
+</html>

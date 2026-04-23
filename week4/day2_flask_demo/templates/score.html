@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><title>成绩查询</title></head>
+<body>
+    <h1>{{ name }} 的成绩</h1>
+    <p>分数：{{ score }}</p>
+    {% if score >= 60 %}
+    <p style="color:green">✅ 及格</p>
+    {% else %}
+    <p style="color:red">❌ 不及格</p>
+    {% endif %}
+</body>
+</html>

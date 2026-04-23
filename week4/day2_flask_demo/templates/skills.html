@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title>技能</title></head>
+<body>
+    <ul>
+        {% for s in skills %}
+        <li>
+            {% if loop.first %}⭐{% endif %}
+            {{ loop.index }}. {{ s }}
+            {% if loop.last %}🎯{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    {% extends "base.html" %}
+    {% block title %}关于{% endblock %}
+    {% block content %}
+    <h1>关于我</h1>
+    <p>{{ name }} - {{ major }}</p>
+    {% endblock %}
+</body>
+</html>

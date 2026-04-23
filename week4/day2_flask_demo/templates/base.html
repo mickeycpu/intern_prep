@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}默认{% endblock %}</title>
+</head>
+<body>
+    <nav>
+        <a href="/">首页</a> |
+        <a href="/about">关于</a>
+    </nav>
+    <hr>
+    {% block content %}{% endblock %}
+    <hr>
+    <footer>张 Flask练习</footer>
+</body>
+</html>
