@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>首页</title>
+</head>
+<body>
+    <h1>用户列表</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <p class="{{ category }}">{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if users %}
+        <table border="1" cellpadding="8">
+            <tr>
+                <th>序号</th>
+                <th>用户名</th>
+                <th>邮箱</th>
+            </tr>
+            {% for u in users %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.email }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>暂无注册用户</p>
+    {% endif %}
+
+    <br>
+    <a href="/register">去注册</a>
+</body>
+</html>

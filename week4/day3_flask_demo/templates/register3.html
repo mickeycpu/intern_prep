@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户注册</title>
+    <style>
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>用户注册（最终版）</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <p class="{{ category }}">{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/register">
+        <p>用户名：<input type="text" name="username"
+                       value="{{ username }}"></p>
+        <p>邮箱：<input type="text" name="email"
+                     value="{{ email }}"></p>
+        <p>密码：<input type="password" name="password"></p>
+        <p><button type="submit">注册</button></p>
+    </form>
+
+    <hr>
+    <p><a href="/">查看所有用户</a></p>
+</body>
+</html>
