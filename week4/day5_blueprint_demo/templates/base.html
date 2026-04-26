@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}管理系统{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        nav { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #333; }
+        nav a:hover { color: #007bff; }
+        .flash-success { color: green; padding: 8px; background: #e8f5e9; border-radius: 4px; margin: 8px 0; }
+        .flash-error { color: red; padding: 8px; background: #ffebee; border-radius: 4px; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f5f5f5; }
+        input, button { padding: 6px 12px; margin: 4px 0; }
+        button { background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-danger { background: #dc3545; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; }
+        .btn-danger:hover { background: #c82333; }
+        .search-form { margin: 15px 0; }
+        .search-form input[type="text"] { padding: 6px; width: 200px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('students.index') }}">📋 学生列表</a>
+        <a href="{{ url_for('students.add') }}">➕ 添加学生</a>
+        <a href="{{ url_for('courses.index') }}">📚 课程列表</a>
+        <a href="{{ url_for('courses.add') }}">➕ 添加课程</a>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="flash-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</body>
+</html>

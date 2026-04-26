@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}课程列表{% endblock %}
+
+{% block content %}
+<h1>📚 课程列表</h1>
+<table>
+    <tr>
+        <th>ID</th><th>课程名</th><th>老师</th><th>课时</th><th>操作</th>
+    </tr>
+    {% for c in courses %}
+    <tr>
+        <td>{{ c.id }}</td>
+        <td>{{ c.name }}</td>
+        <td>{{ c.teacher }}</td>
+        <td>{{ c.hours }}</td>
+        <td>
+            <a href="{{ url_for('courses.delete', id=c.id) }}" class="btn-danger"
+               onclick="return confirm('确定删除 {{ c.name }}？')">删除</a>
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">暂无课程数据</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

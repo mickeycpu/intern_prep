@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}添加课程{% endblock %}
+
+{% block content %}
+<h1>➕ 添加课程</h1>
+<form method="POST">
+    <label>课程名：<input type="text" name="name" value="{{ name|default('') }}"></label><br><br>
+    <label>老师：<input type="text" name="teacher" value="{{ teacher|default('') }}"></label><br><br>
+    <label>课时：<input type="number" name="hours" value="{{ hours|default('') }}"></label><br><br>
+    <button type="submit">添加</button>
+</form>
+{% endblock %}

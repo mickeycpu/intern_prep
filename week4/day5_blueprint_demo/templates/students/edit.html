@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}编辑学生{% endblock %}
+
+{% block content %}
+<h1>✏️ 编辑学生</h1>
+<form method="POST">
+    <label>姓名：<input type="text" name="name" value="{{ student.name }}"></label><br><br>
+    <label>年龄：<input type="number" name="age" value="{{ student.age }}"></label><br><br>
+    <label>成绩：<input type="text" name="score" value="{{ student.score }}"></label><br><br>
+    <button type="submit">保存修改</button>
+</form>
+{% endblock %}

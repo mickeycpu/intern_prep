@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}添加学生{% endblock %}
+
+{% block content %}
+<h1>➕ 添加学生</h1>
+<form method="POST">
+    <label>姓名：<input type="text" name="name" value="{{ name|default('') }}"></label><br><br>
+    <label>年龄：<input type="number" name="age" value="{{ age|default('') }}"></label><br><br>
+    <label>成绩：<input type="text" name="score" value="{{ score|default('') }}"></label><br><br>
+    <button type="submit">添加</button>
+</form>
+{% endblock %}
