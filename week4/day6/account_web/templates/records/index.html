@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}记录列表 - 记账本{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">📋 记账列表</h1>
+<div class="stats">
+    <div class="stat-card income">
+        <div class="label">总收入</div>
+        <div class="amount">¥{{ "%.2f"|format(stats.total_income) }}</div>
+    </div>
+    <div class="stat-card expense">
+        <div class="label">总支出</div>
+        <div class="amount">¥{{ "%.2f"|format(stats.total_expense) }}</div>
+    </div>
+    <div class="stat-card balance">
+        <div class="label">余额</div>
+        <div class="amount">¥{{ "%.2f"|format(balance) }}</div>
+    </div>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th><th>类型</th><th>分类</th><th>金额</th><th>备注</th><th>时间</th><th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in records %}
+        <tr>
+            <td>{{ r.id }}</td>
+            <td>
+                {% if r.type == 'income' %}
+                    <span class="type-income">收入</span>
+                {% else %}
+                    <span class="type-expense">支出</span>
+                {% endif %}
+            </td>
+            <td>{{ r.category }}</td>
+            <td>¥{{ "%.2f"|format(r.amount) }}</td>
+            <td>{{ r.note or '-' }}</td>
+            <td>{{ r.created_at.strftime('%%Y-%%m-%%d %%H:%%M') if r.created_at else '-' }}</td>
+            <td>
+                <a href="{{ url_for('records.edit', id=r.id) }}" class="btn btn-primary">编辑</a>
+                <a href="{{ url_for('records.delete', id=r.id) }}" class="btn btn-danger"
+                   onclick="return confirm('确定删除这条记录吗？')">删除</a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% if not records %}
+        <tr>
+            <td colspan="7" style="text-align:center; color:#999; padding:30px;">暂无记录，去添加一条吧！</td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>
+{% endblock %}

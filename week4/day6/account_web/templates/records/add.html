@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}添加记录 - 记账本{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">➕ 添加记录</h1>
+<form method="POST" action="{{ url_for('records.add') }}">
+    <div class="form-group">
+        <label>类型</label>
+        <select name="type">
+            <option value="expense" {% if type_ == 'expense' %}selected{% endif %}>支出</option>
+            <option value="income" {% if type_ == 'income' %}selected{% endif %}>收入</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>分类</label>
+        <input type="text" name="category" placeholder="如：餐饮、交通、工资" value="{{ category or '' }}">
+    </div>
+    <div class="form-group">
+        <label>金额</label>
+        <input type="number" name="amount" step="0.01" placeholder="如：35.00" value="{{ amount or '' }}">
+    </div>
+    <div class="form-group">
+        <label>备注（可选）</label>
+        <textarea name="note" placeholder="备注信息...">{{ note or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-success">✅ 添加</button>
+    <a href="{{ url_for('records.index') }}" class="btn btn-primary">↩ 返回列表</a>
+</form>
+{% endblock %}
