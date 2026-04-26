@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}学生列表{% endblock %}
+{% block content %}
+<h2>学生列表</h2>
+<table>
+    <tr>
+        <th>ID</th>
+        <th>姓名</th>
+        <th>年龄</th>
+        <th>分数</th>
+        <th>操作</th>
+    </tr>
+    {% for s in students %}
+    <tr>
+        <td>{{ s.id }}</td>
+        <td>{{ s.name }}</td>
+        <td>{{ s.age }}</td>
+        <td>{{ s.score }}</td>
+        <td>
+            <a href="{{ url_for('edit', id=s.id) }}">✏️ 编辑</a>
+            <a href="{{ url_for('delete', id=s.id) }}" onclick="return confirm('确定删除？')">🗑️ 删除</a>
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">暂无学生数据</td></tr>
+    {% endfor %}
+</table>
+<a href="{{ url_for('add') }}">➕ 添加学生</a>
+{% endblock %}
+

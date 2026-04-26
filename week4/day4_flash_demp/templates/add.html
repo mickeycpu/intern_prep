@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}添加学生{% endblock %}
+{% block content %}
+<h2>添加学生</h2>
+<form method="POST">
+    姓名：<input type="text" name="name" value="{{ name }}" required><br><br>
+    年龄：<input type="number" name="age" value="{{ age }}" required><br><br>
+    分数：<input type="number" step="0.1" min="0" max="100" name="score" value="{{ score }}" required><br><br>
+    <button type="submit">✅ 提交</button>
+    <a href="{{ url_for('index') }}">← 返回列表</a>
+</form>
+{% endblock %}
