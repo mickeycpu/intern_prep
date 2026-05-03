@@ -1,0 +1,745 @@
+## 三份代码逐行详解
+
+---
+
+### 一、Round 1 基础调用
+
+```python
+import os                    # Python内置库，操作系统的功能（读环境变量、文件路径等）
+import requests              # 第三方库，发HTTP请求用的（需要pip install）
+from dotenv import load_dotenv  # 从dotenv库导入load_dotenv函数，专门读.env文件
+```
+
+**`from xxx import yyy` 和 `import xxx` 的区别：**
+```python
+import os          # 导入整个模块，用的时候要写 os.getenv()
+from dotenv import load_dotenv  # 只导入一个函数，直接写 load_dotenv()
+```
+
+---
+
+```python
+load_dotenv()
+```
+- 读取项目根目录的 `.env` 文件，把里面的 `KEY=VALUE` 加载到环境变量里
+- 不调用这行 → `os.getenv()` 拿到的全是 `None`
+
+---
+
+```python
+API_KEY = os.getenv("DEEPSEEK_API_KEY")
+```
+- `os.getenv("变量名")` 从环境变量里取值
+- `.env` 里写了 `DEEPSEEK_API_KEY=sk-xxx` → 这里拿到 `"sk-xxx"`
+- 如果 `.env` 里没这行 → 返回 `None`
+
+---
+
+```python
+URL = "https://api.deepseek.com/v1/chat/completions"
+```
+- DeepSeek 的接口地址，所有对话请求都发到这个URL
+- 就像你寄快递的收件地址
+
+---
+
+```python
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+```
+**f-string（格式化字符串）：**
+```python
+name = "张添宇"
+f"你好，{name}"    # → "你好，张添宇"
+f"Bearer {API_KEY}" # → "Bearer sk-xxx"
+# f"..." 里用 {变量名} 直接把变量值嵌入字符串
+```
+**headers 字典里的两个键：**
+- `"Authorization"` — 你是谁（认证信息）
+- `"Content-Type"` — 你发的是什么格式的数据
+
+---
+
+```python
+data = {
+    "model": "deepseek-chat",
+    "messages": [
+        {"role": "user", "content": "用一句话介绍你自己"}
+    ]
+}
+```
+**字典嵌套列表再嵌套字典：**
+```
+data（字典）
+├── "model": "deepseek-chat"        ← 字符串
+└── "messages": [                   ← 列表
+        {"role": "user", "content": "..."}   ← 字典（列表里的一个元素）
+    ]
+```
+- messages 是列表，因为可以有多条对话
+- 列表里每个元素是一个字典，包含 role 和 content
+
+---
+
+```python
+response = requests.post(URL, headers=headers, json=data)
+```
+**`requests.post()` 参数拆解：**
+- `URL` — 发到哪
+- `headers=headers` — 左边的 `headers` 是参数名，右边的 `headers` 是上面定义的变量
+- `json=data` — 把 `data` 字典自动转成 JSON 字符串发出去
+
+**等价于手动操作：**
+```python
+import json
+response = requests.post(
+    url=URL,
+    headers=headers,
+    data=json.dumps(data)  # 手动把字典转JSON字符串
+)
+# 用 json=data 更简洁，自动帮你做 json.dumps()
+```
+
+---
+
+```python
+if response.status_code == 200:
+```
+- `response.status_code` — HTTP 状态码（整数）
+- `200` = 成功，`401` = 认证失败，`500` = 服务器错误
+
+---
+
+```python
+result = response.json()
+```
+- 把响应的 JSON 字符串转成 Python 字典
+- 响应原文是字符串：`'{"choices": [{"message": {"content": "我是AI"}}]}'`
+- `.json()` 后变成真正的 Python 字典，可以用 `['choices']` 取值
+
+---
+
+```python
+reply = result['choices'][0]['message']['content']
+```
+**逐层拆解：**
+```python
+result['choices']           # → [{"message": {"content": "我是AI"}}]  （列表）
+result['choices'][0]        # → {"message": {"content": "我是AI"}}     （字典）
+result['choices'][0]['message']  # → {"content": "我是AI"}             （字典）
+result['choices'][0]['message']['content']  # → "我是AI"               （字符串）
+```
+- `[0]` — 列表取第一个元素（一般只有一个回复）
+- `['message']` — 字典按key取value
+- 链式取值，一层一层剥
+
+---
+
+### 二、Round 2 多轮对话
+
+```python
+def chat(messages):
+    """发送对话请求，返回AI回复"""
+    data = {
+        "model": "deepseek-chat",
+        "messages": messages    # 参数messages，不是上面的全局变量
+    }
+    response = requests.post(URL, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()['choices'][0]['message']['content']
+    else:
+        return f"[错误 {response.status_code}] {response.text}"
+```
+**新语法点：**
+- `response.text` — 响应的原始字符串（可能是错误信息）
+- `"""..."""` — 文档字符串（docstring），说明函数干什么的
+- 函数里 `return` 后面的代码不再执行
+
+---
+
+```python
+messages_with_system = [
+    {"role": "system", "content": "你是一个严格的Python老师..."},
+    {"role": "user", "content": "什么是装饰器？"}
+]
+```
+**列表里两个字典的顺序就是对话顺序：**
+1. system 设定角色（必须放第一个）
+2. user 提问
+
+---
+
+```python
+messages_multi = [
+    {"role": "system", "content": "你是一个友好的助手"},
+    {"role": "user", "content": "我叫张添宇，我在武汉学Python"},
+    {"role": "assistant", "content": "你好张添宇！武汉是个好城市..."},
+    {"role": "user", "content": "你还记得我叫什么吗？我在哪个城市？"}
+]
+```
+**为什么 assistant 的消息是你手写的？**
+- 这是**模拟**第二轮对话，假装AI之前回复过
+- 实际使用中，assistant 消息来自 API 返回值，你把它存到 history 里
+
+---
+
+```python
+chat_history = [
+    {"role": "system", "content": "你是一个Python学习助手..."}
+]
+
+while True:
+    user_input = input("\n你：").strip()
+    if user_input.lower() in ('quit', 'exit', 'q'):
+        print("退出聊天")
+        break
+    if not user_input:
+        continue
+
+    chat_history.append({"role": "user", "content": user_input})
+    ai_reply = chat(chat_history)
+    print(f"AI：{ai_reply}")
+    chat_history.append({"role": "assistant", "content": ai_reply})
+```
+**逐行拆解：**
+```python
+while True:                    # 无限循环，直到 break
+    user_input = input(...)    # 等用户输入，回车结束
+    .strip()                   # 去掉首尾空格/回车
+    user_input.lower()         # 全部转小写："Quit" → "quit"
+    in ('quit', 'exit', 'q')   # 判断是不是退出命令
+    break                      # 跳出 while 循环
+    if not user_input:         # 空字符串是 falsy，not "" → True
+        continue               # 跳过本次循环，回到 while True
+
+    chat_history.append(...)   # 把用户消息加到历史列表末尾
+    ai_reply = chat(chat_history)  # 把整个历史发给API
+    chat_history.append(...)   # 把AI回复也加到历史
+```
+
+---
+
+### 三、Round 3 类封装
+
+```python
+class DeepSeekClient:
+    """DeepSeek API 封装类"""
+
+    def __init__(self, api_key=None, system_prompt="你是一个有用的助手"):
+```
+**`__init__` 构造方法：**
+- 创建对象时自动调用：`client = DeepSeekClient(api_key="xxx")`
+- `api_key=None` — 默认参数，不传就是 None
+- `system_prompt="..."` — 默认值，不传就用这个
+
+---
+
+```python
+self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+```
+**`or` 的妙用：**
+```python
+api_key = "sk-xxx"   →  "sk-xxx" or "env里的值"  →  "sk-xxx"（用传入的）
+api_key = None       →  None or "env里的值"       →  "env里的值"（用.env的）
+```
+- `or` 不只是布尔运算，Python 里 `A or B`：A 是 truthy 返回 A，否则返回 B
+- `None`、`""`、`0`、`[]` 都是 falsy
+
+---
+
+```python
+self.headers = {
+    "Authorization": f"Bearer {self.api_key}",
+    "Content-Type": "application/json"
+}
+```
+- `self.xxx` — 把值存到对象身上，其他方法里通过 `self.xxx` 访问
+- `self` 就是"我自己这个对象"
+
+---
+
+```python
+def _init_history(self):
+    if self.system_prompt:
+        self.history = [{"role": "system", "content": self.system_prompt}]
+```
+- `_init_history` — 下划线开头表示**内部方法**，外面不要调
+- `if self.system_prompt:` — 非空字符串是 truthy，`""` 是 falsy
+
+---
+
+```python
+def ask(self, question):
+    self.history.append({"role": "user", "content": question})
+
+    data = {
+        "model": "deepseek-chat",
+        "messages": self.history
+    }
+
+    response = requests.post(self.url, headers=self.headers, json=data)
+
+    if response.status_code == 200:
+        reply = response.json()['choices'][0]['message']['content']
+        self.history.append({"role": "assistant", "content": reply})
+        return reply
+    else:
+        error_msg = f"[错误 {response.status_code}] {response.text}"
+        self.history.pop()    # 请求失败，把刚才加的用户消息删掉
+        return error_msg
+```
+**`self.history.pop()` 是什么？**
+```python
+my_list = [1, 2, 3]
+my_list.pop()      # → 3，列表变成 [1, 2]（删掉最后一个）
+my_list.append(4)  # → [1, 2, 4]
+my_list.pop()      # → 4，列表变回 [1, 2]
+```
+- `pop()` 移除并返回列表最后一个元素
+- 请求失败时 pop 掉用户消息，保持 history 干净
+
+---
+
+```python
+def reset(self):
+    self._init_history()
+    print("对话已重置")
+```
+- 调用内部方法重新初始化 history
+- `self._init_history()` — 在类内部调用自己的方法，必须加 `self.`
+
+---
+
+```python
+def show_history(self):
+    for msg in self.history:
+        role = msg['role']
+        content = msg['content']
+        if role == 'system':
+            print(f"[系统] {content}")
+        elif role == 'user':
+            print(f"[你] {content}")
+        elif role == 'assistant':
+            print(f"[AI] {content}")
+        print()
+```
+**`for msg in self.history:` 遍历列表：**
+```python
+self.history = [
+    {"role": "system", "content": "..."},
+    {"role": "user", "content": "..."},
+]
+# 第1次循环：msg = {"role": "system", "content": "..."}
+# 第2次循环：msg = {"role": "user", "content": "..."}
+```
+
+---
+
+```python
+if __name__ == '__main__':
+    client = DeepSeekClient(
+        system_prompt="你是一个Python面试官..."
+    )
+```
+**`if __name__ == '__main__':` 的作用：**
+- 直接运行 `python day4_round3_oop.py` → 条件成立，执行里面的代码
+- 别的文件 `from day4_round3_oop import DeepSeekClient` → 条件不成立，不执行
+- 防止被 import 时自动运行测试代码
+
+---
+
+## 语法速查表
+
+| 语法 | 含义 | 示例 |
+|------|------|------|
+| `f"..."` | 格式化字符串，`{}`里嵌入变量 | `f"你好，{name}"` |
+| `{}` | 字典 | `{"key": "value"}` |
+| `[]` | 列表 | `[1, 2, 3]` |
+| `[0]` | 列表取第一个元素 | `["a","b"][0]` → `"a"` |
+| `['key']` | 字典按key取value | `{"a":1}["a"]` → `1` |
+| `.append(x)` | 列表末尾加一个元素 | `[1].append(2)` → `[1,2]` |
+| `.pop()` | 列表删掉最后一个 | `[1,2].pop()` → `[1,2]`变`[1]` |
+| `.strip()` | 去首尾空白 | `" hi ".strip()` → `"hi"` |
+| `.lower()` | 转小写 | `"ABC".lower()` → `"abc"` |
+| `or` | 前面是falsy用后面的 | `None or "x"` → `"x"` |
+| `self` | 代表对象自己 | `self.name = "xxx"` |
+| `def __init__` | 构造方法，创建对象时调用 | `DeepSeekClient()` |
+| `"""..."""` | 文档字符串 | 函数/类的说明文档 |
+
+---
+
+还有什么不清楚的，或者准备跑代码了告诉我。## 三份代码逐行详解
+
+---
+
+### 一、Round 1 基础调用
+
+```python
+import os                    # Python内置库，操作系统的功能（读环境变量、文件路径等）
+import requests              # 第三方库，发HTTP请求用的（需要pip install）
+from dotenv import load_dotenv  # 从dotenv库导入load_dotenv函数，专门读.env文件
+```
+
+**`from xxx import yyy` 和 `import xxx` 的区别：**
+```python
+import os          # 导入整个模块，用的时候要写 os.getenv()
+from dotenv import load_dotenv  # 只导入一个函数，直接写 load_dotenv()
+```
+
+---
+
+```python
+load_dotenv()
+```
+- 读取项目根目录的 `.env` 文件，把里面的 `KEY=VALUE` 加载到环境变量里
+- 不调用这行 → `os.getenv()` 拿到的全是 `None`
+
+---
+
+```python
+API_KEY = os.getenv("DEEPSEEK_API_KEY")
+```
+- `os.getenv("变量名")` 从环境变量里取值
+- `.env` 里写了 `DEEPSEEK_API_KEY=sk-xxx` → 这里拿到 `"sk-xxx"`
+- 如果 `.env` 里没这行 → 返回 `None`
+
+---
+
+```python
+URL = "https://api.deepseek.com/v1/chat/completions"
+```
+- DeepSeek 的接口地址，所有对话请求都发到这个URL
+- 就像你寄快递的收件地址
+
+---
+
+```python
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+```
+**f-string（格式化字符串）：**
+```python
+name = "张添宇"
+f"你好，{name}"    # → "你好，张添宇"
+f"Bearer {API_KEY}" # → "Bearer sk-xxx"
+# f"..." 里用 {变量名} 直接把变量值嵌入字符串
+```
+**headers 字典里的两个键：**
+- `"Authorization"` — 你是谁（认证信息）
+- `"Content-Type"` — 你发的是什么格式的数据
+
+---
+
+```python
+data = {
+    "model": "deepseek-chat",
+    "messages": [
+        {"role": "user", "content": "用一句话介绍你自己"}
+    ]
+}
+```
+**字典嵌套列表再嵌套字典：**
+```
+data（字典）
+├── "model": "deepseek-chat"        ← 字符串
+└── "messages": [                   ← 列表
+        {"role": "user", "content": "..."}   ← 字典（列表里的一个元素）
+    ]
+```
+- messages 是列表，因为可以有多条对话
+- 列表里每个元素是一个字典，包含 role 和 content
+
+---
+
+```python
+response = requests.post(URL, headers=headers, json=data)
+```
+**`requests.post()` 参数拆解：**
+- `URL` — 发到哪
+- `headers=headers` — 左边的 `headers` 是参数名，右边的 `headers` 是上面定义的变量
+- `json=data` — 把 `data` 字典自动转成 JSON 字符串发出去
+
+**等价于手动操作：**
+```python
+import json
+response = requests.post(
+    url=URL,
+    headers=headers,
+    data=json.dumps(data)  # 手动把字典转JSON字符串
+)
+# 用 json=data 更简洁，自动帮你做 json.dumps()
+```
+
+---
+
+```python
+if response.status_code == 200:
+```
+- `response.status_code` — HTTP 状态码（整数）
+- `200` = 成功，`401` = 认证失败，`500` = 服务器错误
+
+---
+
+```python
+result = response.json()
+```
+- 把响应的 JSON 字符串转成 Python 字典
+- 响应原文是字符串：`'{"choices": [{"message": {"content": "我是AI"}}]}'`
+- `.json()` 后变成真正的 Python 字典，可以用 `['choices']` 取值
+
+---
+
+```python
+reply = result['choices'][0]['message']['content']
+```
+**逐层拆解：**
+```python
+result['choices']           # → [{"message": {"content": "我是AI"}}]  （列表）
+result['choices'][0]        # → {"message": {"content": "我是AI"}}     （字典）
+result['choices'][0]['message']  # → {"content": "我是AI"}             （字典）
+result['choices'][0]['message']['content']  # → "我是AI"               （字符串）
+```
+- `[0]` — 列表取第一个元素（一般只有一个回复）
+- `['message']` — 字典按key取value
+- 链式取值，一层一层剥
+
+---
+
+### 二、Round 2 多轮对话
+
+```python
+def chat(messages):
+    """发送对话请求，返回AI回复"""
+    data = {
+        "model": "deepseek-chat",
+        "messages": messages    # 参数messages，不是上面的全局变量
+    }
+    response = requests.post(URL, headers=headers, json=data)
+    if response.status_code == 200:
+        return response.json()['choices'][0]['message']['content']
+    else:
+        return f"[错误 {response.status_code}] {response.text}"
+```
+**新语法点：**
+- `response.text` — 响应的原始字符串（可能是错误信息）
+- `"""..."""` — 文档字符串（docstring），说明函数干什么的
+- 函数里 `return` 后面的代码不再执行
+
+---
+
+```python
+messages_with_system = [
+    {"role": "system", "content": "你是一个严格的Python老师..."},
+    {"role": "user", "content": "什么是装饰器？"}
+]
+```
+**列表里两个字典的顺序就是对话顺序：**
+1. system 设定角色（必须放第一个）
+2. user 提问
+
+---
+
+```python
+messages_multi = [
+    {"role": "system", "content": "你是一个友好的助手"},
+    {"role": "user", "content": "我叫张添宇，我在武汉学Python"},
+    {"role": "assistant", "content": "你好张添宇！武汉是个好城市..."},
+    {"role": "user", "content": "你还记得我叫什么吗？我在哪个城市？"}
+]
+```
+**为什么 assistant 的消息是你手写的？**
+- 这是**模拟**第二轮对话，假装AI之前回复过
+- 实际使用中，assistant 消息来自 API 返回值，你把它存到 history 里
+
+---
+
+```python
+chat_history = [
+    {"role": "system", "content": "你是一个Python学习助手..."}
+]
+
+while True:
+    user_input = input("\n你：").strip()
+    if user_input.lower() in ('quit', 'exit', 'q'):
+        print("退出聊天")
+        break
+    if not user_input:
+        continue
+
+    chat_history.append({"role": "user", "content": user_input})
+    ai_reply = chat(chat_history)
+    print(f"AI：{ai_reply}")
+    chat_history.append({"role": "assistant", "content": ai_reply})
+```
+**逐行拆解：**
+```python
+while True:                    # 无限循环，直到 break
+    user_input = input(...)    # 等用户输入，回车结束
+    .strip()                   # 去掉首尾空格/回车
+    user_input.lower()         # 全部转小写："Quit" → "quit"
+    in ('quit', 'exit', 'q')   # 判断是不是退出命令
+    break                      # 跳出 while 循环
+    if not user_input:         # 空字符串是 falsy，not "" → True
+        continue               # 跳过本次循环，回到 while True
+
+    chat_history.append(...)   # 把用户消息加到历史列表末尾
+    ai_reply = chat(chat_history)  # 把整个历史发给API
+    chat_history.append(...)   # 把AI回复也加到历史
+```
+
+---
+
+### 三、Round 3 类封装
+
+```python
+class DeepSeekClient:
+    """DeepSeek API 封装类"""
+
+    def __init__(self, api_key=None, system_prompt="你是一个有用的助手"):
+```
+**`__init__` 构造方法：**
+- 创建对象时自动调用：`client = DeepSeekClient(api_key="xxx")`
+- `api_key=None` — 默认参数，不传就是 None
+- `system_prompt="..."` — 默认值，不传就用这个
+
+---
+
+```python
+self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+```
+**`or` 的妙用：**
+```python
+api_key = "sk-xxx"   →  "sk-xxx" or "env里的值"  →  "sk-xxx"（用传入的）
+api_key = None       →  None or "env里的值"       →  "env里的值"（用.env的）
+```
+- `or` 不只是布尔运算，Python 里 `A or B`：A 是 truthy 返回 A，否则返回 B
+- `None`、`""`、`0`、`[]` 都是 falsy
+
+---
+
+```python
+self.headers = {
+    "Authorization": f"Bearer {self.api_key}",
+    "Content-Type": "application/json"
+}
+```
+- `self.xxx` — 把值存到对象身上，其他方法里通过 `self.xxx` 访问
+- `self` 就是"我自己这个对象"
+
+---
+
+```python
+def _init_history(self):
+    if self.system_prompt:
+        self.history = [{"role": "system", "content": self.system_prompt}]
+```
+- `_init_history` — 下划线开头表示**内部方法**，外面不要调
+- `if self.system_prompt:` — 非空字符串是 truthy，`""` 是 falsy
+
+---
+
+```python
+def ask(self, question):
+    self.history.append({"role": "user", "content": question})
+
+    data = {
+        "model": "deepseek-chat",
+        "messages": self.history
+    }
+
+    response = requests.post(self.url, headers=self.headers, json=data)
+
+    if response.status_code == 200:
+        reply = response.json()['choices'][0]['message']['content']
+        self.history.append({"role": "assistant", "content": reply})
+        return reply
+    else:
+        error_msg = f"[错误 {response.status_code}] {response.text}"
+        self.history.pop()    # 请求失败，把刚才加的用户消息删掉
+        return error_msg
+```
+**`self.history.pop()` 是什么？**
+```python
+my_list = [1, 2, 3]
+my_list.pop()      # → 3，列表变成 [1, 2]（删掉最后一个）
+my_list.append(4)  # → [1, 2, 4]
+my_list.pop()      # → 4，列表变回 [1, 2]
+```
+- `pop()` 移除并返回列表最后一个元素
+- 请求失败时 pop 掉用户消息，保持 history 干净
+
+---
+
+```python
+def reset(self):
+    self._init_history()
+    print("对话已重置")
+```
+- 调用内部方法重新初始化 history
+- `self._init_history()` — 在类内部调用自己的方法，必须加 `self.`
+
+---
+
+```python
+def show_history(self):
+    for msg in self.history:
+        role = msg['role']
+        content = msg['content']
+        if role == 'system':
+            print(f"[系统] {content}")
+        elif role == 'user':
+            print(f"[你] {content}")
+        elif role == 'assistant':
+            print(f"[AI] {content}")
+        print()
+```
+**`for msg in self.history:` 遍历列表：**
+```python
+self.history = [
+    {"role": "system", "content": "..."},
+    {"role": "user", "content": "..."},
+]
+# 第1次循环：msg = {"role": "system", "content": "..."}
+# 第2次循环：msg = {"role": "user", "content": "..."}
+```
+
+---
+
+```python
+if __name__ == '__main__':
+    client = DeepSeekClient(
+        system_prompt="你是一个Python面试官..."
+    )
+```
+**`if __name__ == '__main__':` 的作用：**
+- 直接运行 `python day4_round3_oop.py` → 条件成立，执行里面的代码
+- 别的文件 `from day4_round3_oop import DeepSeekClient` → 条件不成立，不执行
+- 防止被 import 时自动运行测试代码
+
+---
+
+## 语法速查表
+
+| 语法 | 含义 | 示例 |
+|------|------|------|
+| `f"..."` | 格式化字符串，`{}`里嵌入变量 | `f"你好，{name}"` |
+| `{}` | 字典 | `{"key": "value"}` |
+| `[]` | 列表 | `[1, 2, 3]` |
+| `[0]` | 列表取第一个元素 | `["a","b"][0]` → `"a"` |
+| `['key']` | 字典按key取value | `{"a":1}["a"]` → `1` |
+| `.append(x)` | 列表末尾加一个元素 | `[1].append(2)` → `[1,2]` |
+| `.pop()` | 列表删掉最后一个 | `[1,2].pop()` → `[1,2]`变`[1]` |
+| `.strip()` | 去首尾空白 | `" hi ".strip()` → `"hi"` |
+| `.lower()` | 转小写 | `"ABC".lower()` → `"abc"` |
+| `or` | 前面是falsy用后面的 | `None or "x"` → `"x"` |
+| `self` | 代表对象自己 | `self.name = "xxx"` |
+| `def __init__` | 构造方法，创建对象时调用 | `DeepSeekClient()` |
+| `"""..."""` | 文档字符串 | 函数/类的说明文档 |
+
+---
+
+还有什么不清楚的，或者准备跑代码了告诉我。
